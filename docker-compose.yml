@@ -35,7 +35,7 @@ services:
             GITEMAIL: ${GITEMAIL:-developer@ulhoa.com}
         restart: 'no'
         ports:
-            - "8002:80"
+            - "80:80"
         volumes:
             - .:/var/www/html/wumods
             - ~/.ssh:/root/.ssh
