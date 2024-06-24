@@ -1,0 +1,55 @@
+services:
+    db-mysql:
+        image: mysql:8.0.33
+        container_name: mysql-wumods
+        command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-wumods}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1234567}
+            MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports:
+            - 3383:3306
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - dev-wumods
+
+    redis:
+        image: redis:latest
+        container_name: redis-wumods
+        networks:
+            - dev-wumods
+    web:
+        depends_on:
+            - db-mysql
+        image: wumods
+        container_name: server-wumods
+        build:
+            context: ./.docker/server
+            dockerfile: Dockerfile
+            args:
+                WWWUSER: ${WWWUSER:-developer}
+                WWWGROUP: ${WWWGROUP:-1000}
+        environment:
+            GITNAME: ${GITNAME:-developer}
+            GITEMAIL: ${GITEMAIL:-developer@ulhoa.com}
+        restart: 'no'
+        ports:
+            - "8002:80"
+        volumes:
+            - .:/var/www/html/wumods
+            - ~/.ssh:/root/.ssh
+        networks:
+            - dev-wumods
+        cap_add:
+            - NET_ADMIN
+        links:
+            - db-mysql
+
+networks:
+    dev-wumods:
+        driver: bridge
+
+volumes:
+    mysql_data:
+        driver: local
