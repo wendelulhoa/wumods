@@ -1,10 +1,11 @@
 services:
     db-mysql:
         image: mysql:8.0.33
-        container_name: mysql-wumods
+        container_name: mysql-ulhoamods
         command: ["mysqld", "--default-authentication-plugin=mysql_native_password"]
+        restart: always
         environment:
-            MYSQL_DATABASE: ${DB_DATABASE:-wumods}
+            MYSQL_DATABASE: ${DB_DATABASE:-ulhoamods}
             MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1234567}
             MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
         ports:
@@ -12,42 +13,47 @@ services:
         volumes:
             - mysql_data:/var/lib/mysql
         networks:
-            - dev-wumods
-
-    redis:
-        image: redis:latest
-        container_name: redis-wumods
-        networks:
-            - dev-wumods
+            - dev-ulhoamods
     web:
         depends_on:
             - db-mysql
-        image: wumods
-        container_name: server-wumods
+        image: ulhoamods
+        container_name: server-ulhoamods
         build:
-            context: ./.docker/server
+            context: ./docker
             dockerfile: Dockerfile
             args:
-                WWWUSER: ${WWWUSER:-developer}
+                WWWUSER: ${WWWUSER:-1000}
                 WWWGROUP: ${WWWGROUP:-1000}
-        environment:
-            GITNAME: ${GITNAME:-developer}
-            GITEMAIL: ${GITEMAIL:-developer@ulhoa.com}
-        restart: 'no'
+        restart: always
         ports:
-            - "80:80"
+            - "8004:80"
+        working_dir: /var/www/html/ulhoamods
         volumes:
-            - .:/var/www/html/wumods
-            - ~/.ssh:/root/.ssh
+            - .:/var/www/html/ulhoamods
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         networks:
-            - dev-wumods
+            - dev-ulhoamods
         cap_add:
             - NET_ADMIN
         links:
             - db-mysql
+    
+    redis:
+        image: redis:latest
+        container_name: redis-ulhoamods
+        restart: always
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 3s
+            timeout: 2s
+            retries: 3
+        networks:
+            - dev-ulhoamods
 
 networks:
-    dev-wumods:
+    dev-ulhoamods:
         driver: bridge
 
 volumes:
